@@ -370,9 +370,9 @@ class ByKaryBot:
         user_message = update.message.text
         user_name = update.effective_user.first_name
         
-        # Сразу отправляем сообщение "думаю..." 
+        # Сразу отправляем сообщение "пишу..." 
         thinking_message = await update.message.reply_text(
-            "🤔 <i>Думаю над ответом...</i>",
+            "💋 <i>пишу...</i>",
             parse_mode='HTML'
         )
         
