@@ -1,0 +1,10 @@
+{
+    "providers": ["python"],
+    "buildpacks": [],
+    "install": {
+      "cmds": ["pip install --break-system-packages -r requirements.txt"]
+    },
+    "start": {
+      "cmd": "python start.py"
+    }
+  }
