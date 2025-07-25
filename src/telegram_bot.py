@@ -61,6 +61,7 @@ logger.info(f"✅ AI Provider: {current_provider}")
 class ByKaryBot:
     def __init__(self):
         self.application = None
+        self.user_main_messages = {}  # Хранение ID главных сообщений
         
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обработчик команды /start"""
@@ -223,6 +224,25 @@ class ByKaryBot:
         except Exception as e:
             logger.error(f"Error getting cart data: {e}")
             return []
+    
+    async def clear_cart(self, user_id: str):
+        """Очистить корзину пользователя"""
+        try:
+            # Формируем URL для очистки корзины
+            api_url = WEBAPP_URL.replace('/static', '') if '/static' in WEBAPP_URL else WEBAPP_URL
+            clear_url = f"{api_url}/api/cart/{user_id}/clear"
+            
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+                async with session.delete(clear_url) as response:
+                    if response.status == 200:
+                        logger.info(f"Cart cleared for user {user_id}")
+                        return True
+                    else:
+                        logger.error(f"Error clearing cart: {response.status}")
+                        return False
+        except Exception as e:
+            logger.error(f"Error clearing cart: {e}")
+            return False
     
     async def show_cart_info(self, query):
         """Показать информацию о корзине пользователя"""
@@ -641,6 +661,11 @@ class ByKaryBot:
                 parse_mode='HTML'
             )
         elif payload.startswith("cart_"):
+            user_id = str(update.effective_user.id)
+            
+            # Очищаем корзину после успешной оплаты
+            await self.clear_cart(user_id)
+            
             keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton("✨ Открыть каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
                 [InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
@@ -650,6 +675,7 @@ class ByKaryBot:
                 "📦 Ваш заказ принят в обработку\n"
                 "📞 Мы свяжемся с вами для уточнения деталей доставки\n\n"
                 f"💰 Сумма: {payment.total_amount // 100}₽\n\n"
+                "🛒 <i>Корзина очищена для новых покупок</i>\n\n"
                 "<i>✨ Спасибо за покупку в BY KARY!</i>",
                 reply_markup=keyboard,
                 parse_mode='HTML'
