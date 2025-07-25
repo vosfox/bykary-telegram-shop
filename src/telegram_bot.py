@@ -594,9 +594,6 @@ class ByKaryBot:
                 currency="RUB",
                 prices=[LabeledPrice("Заказ BY KARY", int(total_amount * 100))],  # в копейках
                 start_parameter="cart_payment",
-                photo_url="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400",
-                photo_width=400,
-                photo_height=300,
                 need_name=True,
                 need_phone_number=True,
                 need_email=False,
