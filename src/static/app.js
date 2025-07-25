@@ -399,9 +399,13 @@ function showError(message) {
 function renderProductImages(product) {
     const images = product.images || [product.image_url];
     
+    // Сохраняем изображения в глобальном объекте для каждого товара
+    window.productImages = window.productImages || {};
+    window.productImages[product.id] = images;
+    
     if (images.length === 1) {
         return `<img src="${images[0]}" alt="${product.name}" 
-                     onclick="openImageModal('${images[0]}', '${product.name}', ${JSON.stringify(images).replace(/"/g, '&quot;')})"
+                     onclick="openImageModalForProduct(${product.id}, '${images[0]}', '${product.name}')"
                      style="cursor: pointer;"
                      onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">`;
     }
@@ -411,7 +415,7 @@ function renderProductImages(product) {
     return `
         <div class="image-gallery">
             <img src="${primaryImage}" alt="${product.name}" class="primary-image" id="primary-${product.id}"
-                 onclick="openImageModal('${primaryImage}', '${product.name}', ${JSON.stringify(images).replace(/"/g, '&quot;')})"
+                 onclick="openImageModalForProduct(${product.id}, '${primaryImage}', '${product.name}')"
                  style="cursor: pointer;"
                  onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">
             ${images.length > 1 ? `
@@ -447,6 +451,33 @@ function formatPrice(price) {
 // Image Modal Functions
 let currentModalImages = [];
 let currentModalIndex = 0;
+
+function openImageModalForProduct(productId, imageUrl, productName) {
+    try {
+        currentModalImages = window.productImages[productId] || [imageUrl];
+        currentModalIndex = currentModalImages.indexOf(imageUrl);
+        
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalThumbnails = document.getElementById('modalThumbnails');
+        
+        modalImage.src = imageUrl;
+        modalImage.alt = productName;
+        
+        // Создаем миниатюры
+        modalThumbnails.innerHTML = currentModalImages.map((img, index) => `
+            <img src="${img}" alt="${productName} ${index + 1}" 
+                 class="modal-thumb ${index === currentModalIndex ? 'active' : ''}"
+                 onclick="selectModalImage(${index})">
+        `).join('');
+        
+        modal.classList.remove('hidden');
+        updateModalNavigation();
+        
+    } catch (e) {
+        console.error('Error opening modal:', e);
+    }
+}
 
 function openImageModal(imageUrl, productName, images) {
     try {
