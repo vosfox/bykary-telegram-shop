@@ -550,6 +550,9 @@ class ByKaryBot:
             
             await query.answer("💳 Счет создан! Выберите способ оплаты")
             
+            # Возвращаем меню обратно
+            await self.show_coffee_menu(query)
+            
         except Exception as e:
             logger.error(f"Ошибка создания счета: {e}")
             await query.answer("❌ Ошибка создания счета", show_alert=True)
@@ -604,6 +607,9 @@ class ByKaryBot:
             )
             
             await query.answer("💳 Счет создан! Заполните данные для доставки")
+            
+            # Возвращаем корзину обратно
+            await self.show_cart_info(query)
             
         except Exception as e:
             logger.error(f"Ошибка создания счета для корзины: {e}")
