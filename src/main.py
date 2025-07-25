@@ -45,6 +45,39 @@ def init_db():
     except Exception as e:
         return f"Ошибка: {e}"
 
+@app.route('/download-images')
+def download_images():
+    """Скачать изображения товаров с интернета"""
+    try:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from download_product_images import download_product_images
+        download_product_images()
+        return "✅ Изображения товаров скачаны успешно!"
+    except Exception as e:
+        return f"❌ Ошибка скачивания изображений: {str(e)}"
+
+@app.route('/setup-images')
+def setup_images():
+    """Полная настройка изображений: скачать + обновить базу"""
+    try:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from download_product_images import download_product_images
+        
+        # Сначала скачиваем изображения
+        download_product_images()
+        
+        # Потом инициализируем базу с товарами
+        from src.init_data import init_products
+        init_products()
+        
+        return "🎉 Изображения товаров скачаны и база обновлена! Галереи готовы!"
+    except Exception as e:
+        return f"❌ Ошибка настройки изображений: {str(e)}"
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
