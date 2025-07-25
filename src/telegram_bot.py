@@ -12,8 +12,8 @@ load_dotenv()
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, LabeledPrice
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, PreCheckoutQueryHandler
 from openai import OpenAI
 
 # Настройка логирования
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # Конфигурация
 BOT_TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
 WEBAPP_URL = os.getenv('WEBAPP_URL', 'https://your-app-url.com')
+PAYMENT_PROVIDER_TOKEN = os.getenv('PAYMENT_PROVIDER_TOKEN', 'YOUR_PAYMENT_TOKEN_HERE')
 
 # AI Provider Configuration
 OPENPROXY_API_KEY = os.getenv('OPENPROXY_API_KEY')
@@ -263,6 +264,7 @@ class ByKaryBot:
         cart_text += "<i>💫 Корзина синхронизируется между ботом и веб-каталогом</i>"
         
         keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💳 Оплатить заказ", callback_data="pay_cart")],
             [InlineKeyboardButton("🛍 Открыть корзину", web_app=WebAppInfo(url=f"{WEBAPP_URL}#cart"))],
             [InlineKeyboardButton("✨ Каталог", web_app=WebAppInfo(url=WEBAPP_URL)),
              InlineKeyboardButton("🔄 Обновить", callback_data="show_cart")],
@@ -331,21 +333,13 @@ class ByKaryBot:
             )
             
         elif query.data == "buy_coffee":
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("💳 Оплатить кофе", url="https://payment-url-placeholder.com")],
-                [InlineKeyboardButton("🔄 Назад в меню", callback_data="main_menu")]
-            ])
-            await query.edit_message_text(
-                "☕ <b>Угостить кофе BY KARY</b>\n\n"
-                "💕 Поддержите создателей бренда BY KARY!\n\n"
-                "🎯 <b>Варианты поддержки:</b>\n"
-                "• ☕ Один кофе - 150₽\n"
-                "• ☕☕ Два кофе - 300₽\n"
-                "• 🍰 Кофе с десертом - 500₽\n\n"
-                "<i>Каждая чашечка кофе вдохновляет нас создавать новые коллекции! 💫</i>",
-                reply_markup=keyboard,
-                parse_mode='HTML'
-            )
+            await self.show_coffee_menu(query)
+            
+        elif query.data.startswith("coffee_"):
+            await self.process_coffee_payment(query)
+            
+        elif query.data == "pay_cart":
+            await self.process_cart_payment(query)
     
     async def ai_assistant(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """AI-ассистент для ответов на вопросы"""
@@ -491,6 +485,160 @@ class ByKaryBot:
         except Exception as e:
             logger.error(f"Ошибка настройки меню бота: {e}")
     
+    async def show_coffee_menu(self, query):
+        """Показать меню кофе BY KARY"""
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🧋 Bubble tea - 350₽", callback_data="coffee_bubble_tea")],
+            [InlineKeyboardButton("☕ Coffee - 250₽", callback_data="coffee_regular")],
+            [InlineKeyboardButton("🍵 Matcha - 300₽", callback_data="coffee_matcha")],
+            [InlineKeyboardButton("🍫 Дубайский шоколад - 450₽", callback_data="coffee_dubai_chocolate")],
+            [InlineKeyboardButton("🔄 Назад в меню", callback_data="main_menu")]
+        ])
+        await query.edit_message_text(
+            "☕ <b>Кофейное меню BY KARY</b>\n\n"
+            "🧋 <b>Bubble tea</b> - 350₽\n"
+            "Освежающий чай с жемчужинами тапиоки\n\n"
+            "☕ <b>Coffee</b> - 250₽\n"
+            "Классический ароматный кофе\n\n"
+            "🍵 <b>Matcha</b> - 300₽\n"
+            "Японский зеленый чай матча\n\n"
+            "🍫 <b>Дубайский шоколад</b> - 450₽\n"
+            "Премиальный шоколад с фисташкой\n\n"
+            "<i>💕 Поддержите создателей бренда BY KARY!</i>",
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
+    
+    async def process_coffee_payment(self, query):
+        """Обработка оплаты кофе"""
+        coffee_type = query.data.replace("coffee_", "")
+        
+        # Определяем цену и название
+        coffee_menu = {
+            "bubble_tea": {"name": "🧋 Bubble tea", "price": 35000},  # в копейках
+            "regular": {"name": "☕ Coffee", "price": 25000},
+            "matcha": {"name": "🍵 Matcha", "price": 30000},
+            "dubai_chocolate": {"name": "🍫 Дубайский шоколад", "price": 45000}
+        }
+        
+        if coffee_type not in coffee_menu:
+            return
+            
+        item = coffee_menu[coffee_type]
+        
+        try:
+            # Создаем счет для оплаты
+            await query.message.reply_invoice(
+                title=f"BY KARY - {item['name']}",
+                description=f"Поддержите создателей бренда BY KARY! 💕",
+                payload=f"coffee_{coffee_type}_{query.from_user.id}",
+                provider_token=PAYMENT_PROVIDER_TOKEN,
+                currency="RUB",
+                prices=[LabeledPrice(item['name'], item['price'])],
+                start_parameter="coffee_payment",
+                photo_url="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400",
+                photo_width=400,
+                photo_height=300,
+                need_name=False,
+                need_phone_number=False,
+                need_email=False,
+                need_shipping_address=False,
+                send_phone_number_to_provider=False,
+                send_email_to_provider=False,
+                is_flexible=False
+            )
+            
+            await query.answer("💳 Счет создан! Выберите способ оплаты")
+            
+        except Exception as e:
+            logger.error(f"Ошибка создания счета: {e}")
+            await query.answer("❌ Ошибка создания счета", show_alert=True)
+    
+    async def process_cart_payment(self, query):
+        """Обработка оплаты корзины"""
+        user_id = str(query.from_user.id)
+        cart_items = await self.get_cart_data(user_id)
+        
+        if not cart_items:
+            await query.answer("❌ Корзина пуста", show_alert=True)
+            return
+        
+        # Считаем общую сумму
+        total_amount = 0
+        items_description = []
+        
+        for item in cart_items:
+            product = item.get('product', {})
+            name = product.get('name', 'Товар')
+            price = product.get('price', 0)
+            quantity = item.get('quantity', 1)
+            
+            item_total = price * quantity
+            total_amount += item_total
+            items_description.append(f"{name} x{quantity}")
+        
+        if total_amount <= 0:
+            await query.answer("❌ Некорректная сумма заказа", show_alert=True)
+            return
+        
+        try:
+            # Создаем счет для оплаты корзины
+            await query.message.reply_invoice(
+                title="BY KARY - Оплата заказа",
+                description=f"Заказ: {', '.join(items_description[:3])}" + ("..." if len(items_description) > 3 else ""),
+                payload=f"cart_{user_id}_{len(cart_items)}",
+                provider_token=PAYMENT_PROVIDER_TOKEN,
+                currency="RUB",
+                prices=[LabeledPrice("Заказ BY KARY", int(total_amount * 100))],  # в копейках
+                start_parameter="cart_payment",
+                photo_url="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400",
+                photo_width=400,
+                photo_height=300,
+                need_name=True,
+                need_phone_number=True,
+                need_email=False,
+                need_shipping_address=True,
+                send_phone_number_to_provider=False,
+                send_email_to_provider=False,
+                is_flexible=False
+            )
+            
+            await query.answer("💳 Счет создан! Заполните данные для доставки")
+            
+        except Exception as e:
+            logger.error(f"Ошибка создания счета для корзины: {e}")
+            await query.answer("❌ Ошибка создания счета", show_alert=True)
+    
+    async def pre_checkout_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка предварительной проверки платежа"""
+        query = update.pre_checkout_query
+        
+        # Всегда подтверждаем (в реальном приложении здесь проверки)
+        await query.answer(ok=True)
+    
+    async def successful_payment_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка успешного платежа"""
+        payment = update.message.successful_payment
+        payload = payment.invoice_payload
+        
+        if payload.startswith("coffee_"):
+            await update.message.reply_text(
+                "🎉 <b>Спасибо за поддержку!</b>\n\n"
+                "☕ Ваш кофе оплачен! \n"
+                "💕 Это вдохновляет нас создавать новые коллекции BY KARY\n\n"
+                "<i>✨ Следите за новинками в нашем каталоге!</i>",
+                parse_mode='HTML'
+            )
+        elif payload.startswith("cart_"):
+            await update.message.reply_text(
+                "🎉 <b>Заказ оплачен!</b>\n\n"
+                "📦 Ваш заказ принят в обработку\n"
+                "📞 Мы свяжемся с вами для уточнения деталей доставки\n\n"
+                f"💰 Сумма: {payment.total_amount // 100}₽\n\n"
+                "<i>✨ Спасибо за покупку в BY KARY!</i>",
+                parse_mode='HTML'
+            )
+    
     def run(self):
         """Запуск бота"""
         if not BOT_TOKEN or BOT_TOKEN == 'YOUR_BOT_TOKEN_HERE':
@@ -507,6 +655,11 @@ class ByKaryBot:
         self.application.add_handler(CommandHandler("cart", self.cart_command))
         self.application.add_handler(CallbackQueryHandler(self.button_handler))
         self.application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, self.web_app_data))
+        
+        # Обработчики платежей
+        self.application.add_handler(PreCheckoutQueryHandler(self.pre_checkout_callback))
+        self.application.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, self.successful_payment_callback))
+        
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.ai_assistant))
         
         # Настраиваем меню при запуске
