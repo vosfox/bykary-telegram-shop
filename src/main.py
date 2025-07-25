@@ -29,6 +29,7 @@ db.init_app(app)
 
 # Импортируем все модели для создания таблиц
 from src.models.product import Product
+from src.models.product_image import ProductImage
 from src.models.cart import CartItem
 from src.models.order import Order
 
