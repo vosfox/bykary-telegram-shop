@@ -30,6 +30,7 @@ PAYMENT_PROVIDER_TOKEN = os.getenv('PAYMENT_PROVIDER_TOKEN', 'YOUR_PAYMENT_TOKEN
 
 # AI Provider Configuration
 OPENPROXY_API_KEY = os.getenv('OPENPROXY_API_KEY')
+OPENPROXY_MODEL = os.getenv('OPENPROXY_MODEL', 'gpt-3.5-turbo')
 OPENPROXY_BASE_URL = os.getenv('OPENPROXY_BASE_URL', 'https://api.openproxy.com/v1')
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
@@ -423,7 +424,7 @@ class ByKaryBot:
             if current_provider == "OpenRouter":
                 model = OPENROUTER_MODEL  # Используем модель из .env
             elif current_provider == "OpenProxy":
-                model = "gpt-3.5-turbo"  # OpenProxy format
+                model = OPENPROXY_MODEL  # Используем модель из .env
             
             # Запрос к AI провайдеру
             response = ai_client.chat.completions.create(
