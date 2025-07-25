@@ -397,36 +397,45 @@ function showError(message) {
 }
 
 function renderProductImages(product) {
-    const images = product.images || [product.image_url];
+    // Получаем изображения из product.images или используем основное изображение
+    let images = [];
+    if (product.images && Array.isArray(product.images)) {
+        images = product.images;
+    } else if (product.image_url) {
+        images = [product.image_url];
+    } else {
+        images = ['/static/images/placeholder.svg'];
+    }
     
     // Сохраняем изображения в глобальном объекте для каждого товара
     window.productImages = window.productImages || {};
     window.productImages[product.id] = images;
     
+    const primaryImage = images[0];
+    
     if (images.length === 1) {
-        return `<img src="${images[0]}" alt="${product.name}" 
-                     onclick="openImageModalForProduct(${product.id}, '${images[0]}', '${product.name}')"
-                     style="cursor: pointer;"
-                     onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">`;
+        // Одно изображение - простая картинка с модалкой
+        return `<img src="${primaryImage}" alt="${product.name}" 
+                     onclick="openImageModal('${primaryImage}', '${product.name}', ${product.id})"
+                     style="cursor: pointer; width: 100%; height: 100%; object-fit: cover;"
+                     onerror="this.src='/static/images/placeholder.svg';">`;
     }
     
-    // Если изображений несколько, создаем галерею с превью
-    const primaryImage = images[0];
+    // Несколько изображений - галерея с превью
     return `
         <div class="image-gallery">
             <img src="${primaryImage}" alt="${product.name}" class="primary-image" id="primary-${product.id}"
-                 onclick="openImageModalForProduct(${product.id}, '${primaryImage}', '${product.name}')"
+                 onclick="openImageModal('${primaryImage}', '${product.name}', ${product.id})"
                  style="cursor: pointer;"
-                 onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">
-            ${images.length > 1 ? `
-                <div class="image-thumbnails">
-                    ${images.map((img, index) => `
-                        <img src="${img}" alt="${product.name} ${index + 1}" class="thumbnail ${index === 0 ? 'active' : ''}"
-                             onclick="switchImage(${product.id}, '${img}', this)"
-                             onerror="this.style.display='none';">
-                    `).join('')}
-                </div>
-            ` : ''}
+                 onerror="this.src='/static/images/placeholder.svg';">
+            <div class="image-thumbnails">
+                ${images.map((img, index) => `
+                    <img src="${img}" alt="${product.name} ${index + 1}" 
+                         class="thumbnail ${index === 0 ? 'active' : ''}"
+                         onclick="switchImage(${product.id}, '${img}', this)"
+                         onerror="this.style.display='none';">
+                `).join('')}
+            </div>
         </div>
     `;
 }
@@ -452,51 +461,30 @@ function formatPrice(price) {
 let currentModalImages = [];
 let currentModalIndex = 0;
 
-function openImageModalForProduct(productId, imageUrl, productName) {
+function openImageModal(imageUrl, productName, productId) {
     try {
+        // Получаем изображения для этого товара
         currentModalImages = window.productImages[productId] || [imageUrl];
         currentModalIndex = currentModalImages.indexOf(imageUrl);
+        if (currentModalIndex === -1) currentModalIndex = 0;
         
         const modal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');
         const modalThumbnails = document.getElementById('modalThumbnails');
         
-        modalImage.src = imageUrl;
+        modalImage.src = currentModalImages[currentModalIndex];
         modalImage.alt = productName;
         
-        // Создаем миниатюры
-        modalThumbnails.innerHTML = currentModalImages.map((img, index) => `
-            <img src="${img}" alt="${productName} ${index + 1}" 
-                 class="modal-thumb ${index === currentModalIndex ? 'active' : ''}"
-                 onclick="selectModalImage(${index})">
-        `).join('');
-        
-        modal.classList.remove('hidden');
-        updateModalNavigation();
-        
-    } catch (e) {
-        console.error('Error opening modal:', e);
-    }
-}
-
-function openImageModal(imageUrl, productName, images) {
-    try {
-        currentModalImages = typeof images === 'string' ? JSON.parse(images) : images;
-        currentModalIndex = currentModalImages.indexOf(imageUrl);
-        
-        const modal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const modalThumbnails = document.getElementById('modalThumbnails');
-        
-        modalImage.src = imageUrl;
-        modalImage.alt = productName;
-        
-        // Создаем миниатюры
-        modalThumbnails.innerHTML = currentModalImages.map((img, index) => `
-            <img src="${img}" alt="${productName} ${index + 1}" 
-                 class="modal-thumb ${index === currentModalIndex ? 'active' : ''}"
-                 onclick="selectModalImage(${index})">
-        `).join('');
+        // Создаем миниатюры только если изображений больше одного
+        if (currentModalImages.length > 1) {
+            modalThumbnails.innerHTML = currentModalImages.map((img, index) => `
+                <img src="${img}" alt="${productName} ${index + 1}" 
+                     class="modal-thumb ${index === currentModalIndex ? 'active' : ''}"
+                     onclick="selectModalImage(${index})">
+            `).join('');
+        } else {
+            modalThumbnails.innerHTML = '';
+        }
         
         modal.classList.remove('hidden');
         updateModalNavigation();
