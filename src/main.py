@@ -35,6 +35,16 @@ from src.models.order import Order
 with app.app_context():
     db.create_all()
 
+@app.route('/init')
+def init_db():
+    """Инициализация базы данных"""
+    try:
+        from src.init_data import init_products
+        init_products()
+        return "База данных обновлена! Товары добавлены с изображениями."
+    except Exception as e:
+        return f"Ошибка: {e}"
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
