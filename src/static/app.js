@@ -401,6 +401,8 @@ function renderProductImages(product) {
     
     if (images.length === 1) {
         return `<img src="${images[0]}" alt="${product.name}" 
+                     onclick="openImageModal('${images[0]}', '${product.name}', ${JSON.stringify(images).replace(/"/g, '&quot;')})"
+                     style="cursor: pointer;"
                      onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">`;
     }
     
@@ -409,6 +411,8 @@ function renderProductImages(product) {
     return `
         <div class="image-gallery">
             <img src="${primaryImage}" alt="${product.name}" class="primary-image" id="primary-${product.id}"
+                 onclick="openImageModal('${primaryImage}', '${product.name}', ${JSON.stringify(images).replace(/"/g, '&quot;')})"
+                 style="cursor: pointer;"
                  onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">
             ${images.length > 1 ? `
                 <div class="image-thumbnails">
@@ -439,6 +443,86 @@ function switchImage(productId, imageUrl, thumbnail) {
 function formatPrice(price) {
     return new Intl.NumberFormat('ru-RU').format(price);
 }
+
+// Image Modal Functions
+let currentModalImages = [];
+let currentModalIndex = 0;
+
+function openImageModal(imageUrl, productName, images) {
+    try {
+        currentModalImages = typeof images === 'string' ? JSON.parse(images) : images;
+        currentModalIndex = currentModalImages.indexOf(imageUrl);
+        
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalThumbnails = document.getElementById('modalThumbnails');
+        
+        modalImage.src = imageUrl;
+        modalImage.alt = productName;
+        
+        // Создаем миниатюры
+        modalThumbnails.innerHTML = currentModalImages.map((img, index) => `
+            <img src="${img}" alt="${productName} ${index + 1}" 
+                 class="modal-thumb ${index === currentModalIndex ? 'active' : ''}"
+                 onclick="selectModalImage(${index})">
+        `).join('');
+        
+        modal.classList.remove('hidden');
+        updateModalNavigation();
+        
+    } catch (e) {
+        console.error('Error opening modal:', e);
+    }
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+}
+
+function selectModalImage(index) {
+    currentModalIndex = index;
+    const modalImage = document.getElementById('modalImage');
+    modalImage.src = currentModalImages[index];
+    
+    // Обновляем активную миниатюру
+    document.querySelectorAll('.modal-thumb').forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === index);
+    });
+    
+    updateModalNavigation();
+}
+
+function previousImage() {
+    if (currentModalIndex > 0) {
+        selectModalImage(currentModalIndex - 1);
+    }
+}
+
+function nextImage() {
+    if (currentModalIndex < currentModalImages.length - 1) {
+        selectModalImage(currentModalIndex + 1);
+    }
+}
+
+function updateModalNavigation() {
+    const prevBtn = document.querySelector('.modal-nav-btn:first-child');
+    const nextBtn = document.querySelector('.modal-nav-btn:last-child');
+    
+    if (prevBtn) prevBtn.disabled = currentModalIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentModalIndex === currentModalImages.length - 1;
+}
+
+// Закрытие модального окна по Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageModal();
+    } else if (e.key === 'ArrowLeft') {
+        previousImage();
+    } else if (e.key === 'ArrowRight') {
+        nextImage();
+    }
+});
 
 // Telegram WebApp event handlers
 tg.onEvent('mainButtonClicked', function() {
