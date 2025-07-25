@@ -60,21 +60,53 @@ def download_images():
 
 @app.route('/setup-images')
 def setup_images():
-    """Полная настройка изображений: скачать + обновить базу"""
+    """Полная настройка изображений: обновить базу с существующими файлами"""
     try:
-        import sys
-        import os
-        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-        from download_product_images import download_product_images
+        # Обновляем базу с новыми URL изображений
+        from src.models.product import Product
+        from src.models.product_image import ProductImage
         
-        # Сначала скачиваем изображения
-        download_product_images()
+        # Данные изображений для каждого товара
+        products_images = {
+            1: ['/static/images/product_1_1.webp', '/static/images/product_1_2.webp'],
+            2: ['/static/images/product_2_1.webp', '/static/images/product_2_2.webp'],
+            3: ['/static/images/product_3_1.webp', '/static/images/product_3_2.webp'],
+            4: ['/static/images/product_4_1.webp', '/static/images/product_4_2.webp'],
+            5: ['/static/images/product_5_1.webp', '/static/images/product_5_2.webp'],
+            6: ['/static/images/product_6_1.webp', '/static/images/product_6_2.webp', '/static/images/product_6_3.webp'],
+            7: ['/static/images/product_7_1.webp', '/static/images/product_7_2.webp'],
+            8: ['/static/images/product_8_1.webp', '/static/images/product_8_2.webp', '/static/images/product_8_3.webp']
+        }
         
-        # Потом инициализируем базу с товарами
-        from src.init_data import init_products
-        init_products()
+        # Очищаем старые изображения
+        ProductImage.query.delete()
         
-        return "🎉 Изображения товаров скачаны и база обновлена! Галереи готовы!"
+        updated_products = 0
+        total_images = 0
+        
+        for product_id, images in products_images.items():
+            product = Product.query.get(product_id)
+            if product:
+                # Обновляем основное изображение
+                product.image_url = images[0]
+                
+                # Добавляем все изображения
+                for index, image_url in enumerate(images):
+                    product_image = ProductImage(
+                        product_id=product_id,
+                        image_url=image_url,
+                        is_primary=(index == 0),
+                        alt_text=f"{product.name} - фото {index + 1}",
+                        order_index=index
+                    )
+                    db.session.add(product_image)
+                    total_images += 1
+                
+                updated_products += 1
+        
+        db.session.commit()
+        
+        return f"🎉 Обновлено {updated_products} товаров с {total_images} изображениями! Галереи готовы!"
     except Exception as e:
         return f"❌ Ошибка настройки изображений: {str(e)}"
 

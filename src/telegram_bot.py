@@ -89,6 +89,7 @@ class ByKaryBot:
              InlineKeyboardButton("💬 Стилист", callback_data="ai_help")],
             [InlineKeyboardButton("📦 Заказы", callback_data="my_orders"),
              InlineKeyboardButton("🌸 Сайт", url="https://bykary.ru")],
+            [InlineKeyboardButton("☕ Купить кофе BY KARY", callback_data="buy_coffee")],
             [InlineKeyboardButton("🔄 Меню", callback_data="main_menu")]
         ]
         
@@ -197,6 +198,7 @@ class ByKaryBot:
              InlineKeyboardButton("💬 Стилист", callback_data="ai_help")],
             [InlineKeyboardButton("📦 Заказы", callback_data="my_orders"),
              InlineKeyboardButton("🌸 Сайт", url="https://bykary.ru")],
+            [InlineKeyboardButton("☕ Купить кофе BY KARY", callback_data="buy_coffee")],
             [InlineKeyboardButton("🔄 Меню", callback_data="main_menu")]
         ])
     
@@ -324,6 +326,23 @@ class ByKaryBot:
                 "• Посетите bykary.ru\n"
                 "• Или свяжитесь с нами напрямую\n\n"
                 "<i>Спасибо за интерес к бренду BY KARY! 💕</i>",
+                reply_markup=keyboard,
+                parse_mode='HTML'
+            )
+            
+        elif query.data == "buy_coffee":
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("💳 Оплатить кофе", url="https://payment-url-placeholder.com")],
+                [InlineKeyboardButton("🔄 Назад в меню", callback_data="main_menu")]
+            ])
+            await query.edit_message_text(
+                "☕ <b>Угостить кофе BY KARY</b>\n\n"
+                "💕 Поддержите создателей бренда BY KARY!\n\n"
+                "🎯 <b>Варианты поддержки:</b>\n"
+                "• ☕ Один кофе - 150₽\n"
+                "• ☕☕ Два кофе - 300₽\n"
+                "• 🍰 Кофе с десертом - 500₽\n\n"
+                "<i>Каждая чашечка кофе вдохновляет нас создавать новые коллекции! 💫</i>",
                 reply_markup=keyboard,
                 parse_mode='HTML'
             )

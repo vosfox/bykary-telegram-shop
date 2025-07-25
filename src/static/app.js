@@ -263,6 +263,27 @@ function showCheckout() {
     showView('checkout');
 }
 
+function processPayment() {
+    if (cart.length === 0) {
+        showError('Корзина пуста');
+        return;
+    }
+    
+    const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    
+    // Отправляем данные о заказе в бот
+    if (tg.sendData) {
+        tg.sendData(JSON.stringify({
+            type: 'payment_request',
+            total_amount: total,
+            cart_items: cart.length,
+            user_id: userId
+        }));
+    }
+    
+    showNotification(`Сумма к оплате: ${formatPrice(total)}₽. Переходим к оплате...`);
+}
+
 async function handleOrderSubmit(event) {
     event.preventDefault();
     
@@ -429,7 +450,12 @@ tg.onEvent('backButtonClicked', function() {
     showView('products');
 });
 
-// Set main button
-tg.MainButton.setText('Закрыть');
+// Set main button for closing
+tg.MainButton.setText('Закрыть каталог');
 tg.MainButton.show();
+
+// Handle main button click for closing
+tg.onEvent('mainButtonClicked', function() {
+    closeWebApp();
+});
 
