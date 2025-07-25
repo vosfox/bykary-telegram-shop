@@ -513,14 +513,20 @@ function selectModalImage(index) {
 }
 
 function previousImage() {
+    // Бесконечная прокрутка - если на первом фото, переходим к последнему
     if (currentModalIndex > 0) {
         selectModalImage(currentModalIndex - 1);
+    } else {
+        selectModalImage(currentModalImages.length - 1);
     }
 }
 
 function nextImage() {
+    // Бесконечная прокрутка - если на последнем фото, переходим к первому
     if (currentModalIndex < currentModalImages.length - 1) {
         selectModalImage(currentModalIndex + 1);
+    } else {
+        selectModalImage(0);
     }
 }
 
@@ -528,8 +534,9 @@ function updateModalNavigation() {
     const prevBtn = document.querySelector('.modal-nav-btn:first-child');
     const nextBtn = document.querySelector('.modal-nav-btn:last-child');
     
-    if (prevBtn) prevBtn.disabled = currentModalIndex === 0;
-    if (nextBtn) nextBtn.disabled = currentModalIndex === currentModalImages.length - 1;
+    // При бесконечной прокрутке кнопки всегда активны (если больше 1 изображения)
+    if (prevBtn) prevBtn.disabled = currentModalImages.length <= 1;
+    if (nextBtn) nextBtn.disabled = currentModalImages.length <= 1;
 }
 
 // Закрытие модального окна по Escape
