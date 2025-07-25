@@ -124,7 +124,10 @@ class ByKaryBot:
 • "Можно ли примерить?"
         """
         
-        await update.message.reply_text(help_text, parse_mode='HTML')
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
+        ])
+        await update.message.reply_text(help_text, reply_markup=keyboard, parse_mode='HTML')
     
     async def catalog_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обработчик команды /catalog"""
@@ -625,20 +628,30 @@ class ByKaryBot:
         payload = payment.invoice_payload
         
         if payload.startswith("coffee_"):
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("✨ Открыть каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
+                [InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
+            ])
             await update.message.reply_text(
                 "🎉 <b>Спасибо за поддержку!</b>\n\n"
                 "☕ Ваш кофе оплачен! \n"
                 "💕 Это вдохновляет нас создавать новые коллекции BY KARY\n\n"
                 "<i>✨ Следите за новинками в нашем каталоге!</i>",
+                reply_markup=keyboard,
                 parse_mode='HTML'
             )
         elif payload.startswith("cart_"):
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("✨ Открыть каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
+                [InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")]
+            ])
             await update.message.reply_text(
                 "🎉 <b>Заказ оплачен!</b>\n\n"
                 "📦 Ваш заказ принят в обработку\n"
                 "📞 Мы свяжемся с вами для уточнения деталей доставки\n\n"
                 f"💰 Сумма: {payment.total_amount // 100}₽\n\n"
                 "<i>✨ Спасибо за покупку в BY KARY!</i>",
+                reply_markup=keyboard,
                 parse_mode='HTML'
             )
     
