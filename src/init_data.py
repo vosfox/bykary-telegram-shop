@@ -13,7 +13,7 @@ def init_products():
             'name': 'Футболка с монограммой черная',
             'description': 'Стильная футболка с монограммой ByKary',
             'price': 5900.0,
-            'image_url': '/static/images/placeholder.svg',
+            'image_url': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
             'category': 'Топы/Футболки',
             'sizes': 'XS,S,M,L'
         },

@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Optional
 import asyncio
+import aiohttp
 from dotenv import load_dotenv
 
 # Загружаем переменные из .env файла
@@ -65,22 +66,30 @@ class ByKaryBot:
         user = update.effective_user
         
         welcome_text = f"""
-Привет, {user.first_name}! Это демо-магазин By Kary 👗
+✨ <b>Добро пожаловать в мир BY KARY</b> ✨
 
-— Посмотри каталог
-— Добавь в корзину  
-— Задай вопрос ассистенту
-— Оформи заказ прямо тут
+Привет, {user.first_name}! 💕
 
-(Это демо. Реальные покупки — на bykary.ru)
+<i>Здесь каждое изделие создано с любовью
+"к себе нужно нежно" — наше кредо</i>
+
+🛍 <b>Что тебя ждет:</b>
+• Эксклюзивная женская одежда
+• Стильные образы на каждый день
+• Персональный AI-стилист
+• Удобное оформление заказов
+
+<i>💎 Это демо-версия магазина
+Полный ассортимент на bykary.ru</i>
         """
         
         keyboard = [
-            [InlineKeyboardButton("🛒 Каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
-            [InlineKeyboardButton("🧺 Корзина", callback_data="show_cart")],
-            [InlineKeyboardButton("💬 Помощь AI", callback_data="ai_help")],
-            [InlineKeyboardButton("📦 Мои заказы", callback_data="my_orders")],
-            [InlineKeyboardButton("🔗 Сайт", url="https://bykary.ru")]
+            [InlineKeyboardButton("✨ КАТАЛОГ", web_app=WebAppInfo(url=WEBAPP_URL))],
+            [InlineKeyboardButton("🛍 Корзина", callback_data="show_cart"), 
+             InlineKeyboardButton("💬 Стилист", callback_data="ai_help")],
+            [InlineKeyboardButton("📦 Заказы", callback_data="my_orders"),
+             InlineKeyboardButton("🌸 Сайт", url="https://bykary.ru")],
+            [InlineKeyboardButton("🔄 Меню", callback_data="main_menu")]
         ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -125,33 +134,197 @@ class ByKaryBot:
             reply_markup=reply_markup
         )
     
+    async def cart_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Обработчик команды /cart"""
+        user_id = str(update.effective_user.id)
+        cart_items = await self.get_cart_data(user_id)
+        
+        if not cart_items:
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("✨ Открыть каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
+                [InlineKeyboardButton("🔄 Меню", callback_data="main_menu")]
+            ])
+            
+            await update.message.reply_text(
+                "🛍 <b>Ваша корзина пуста</b>\n\n"
+                "💫 Добавьте товары из каталога, чтобы они появились здесь\n\n"
+                "<i>✨ Откройте каталог и выберите что-то прекрасное!</i>",
+                reply_markup=keyboard,
+                parse_mode='HTML'
+            )
+            return
+        
+        # Формируем сообщение с товарами из корзины
+        cart_text = "🛍 <b>Ваша корзина</b>\n\n"
+        total_amount = 0
+        
+        for item in cart_items:
+            product = item.get('product', {})
+            name = product.get('name', 'Товар')
+            price = product.get('price', 0)
+            quantity = item.get('quantity', 1)
+            size = item.get('size', 'не указан')
+            
+            item_total = price * quantity
+            total_amount += item_total
+            
+            cart_text += f"📦 <b>{name}</b>\n"
+            cart_text += f"   Размер: {size}\n"
+            cart_text += f"   Количество: {quantity} шт.\n"
+            cart_text += f"   Цена: {price:,}₽ × {quantity} = {item_total:,}₽\n\n"
+        
+        cart_text += f"💰 <b>Итого: {total_amount:,}₽</b>\n\n"
+        cart_text += "<i>💫 Корзина синхронизируется между ботом и веб-каталогом</i>"
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🛍 Открыть корзину", web_app=WebAppInfo(url=f"{WEBAPP_URL}#cart"))],
+            [InlineKeyboardButton("✨ Каталог", web_app=WebAppInfo(url=WEBAPP_URL)),
+             InlineKeyboardButton("🔄 Обновить", callback_data="show_cart")],
+            [InlineKeyboardButton("🔄 Меню", callback_data="main_menu")]
+        ])
+        
+        await update.message.reply_text(
+            cart_text,
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
+    
+    def get_main_menu_keyboard(self):
+        """Возвращает клавиатуру главного меню"""
+        return InlineKeyboardMarkup([
+            [InlineKeyboardButton("✨ КАТАЛОГ", web_app=WebAppInfo(url=WEBAPP_URL))],
+            [InlineKeyboardButton("🛍 Корзина", callback_data="show_cart"), 
+             InlineKeyboardButton("💬 Стилист", callback_data="ai_help")],
+            [InlineKeyboardButton("📦 Заказы", callback_data="my_orders"),
+             InlineKeyboardButton("🌸 Сайт", url="https://bykary.ru")],
+            [InlineKeyboardButton("🔄 Меню", callback_data="main_menu")]
+        ])
+    
+    async def get_cart_data(self, user_id: str):
+        """Получить данные корзины через API"""
+        try:
+            # Формируем URL для запроса корзины
+            api_url = WEBAPP_URL.replace('/static', '') if '/static' in WEBAPP_URL else WEBAPP_URL
+            cart_url = f"{api_url}/api/cart/{user_id}"
+            
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+                async with session.get(cart_url) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    else:
+                        logger.error(f"Error fetching cart: {response.status}")
+                        return []
+        except Exception as e:
+            logger.error(f"Error getting cart data: {e}")
+            return []
+    
+    async def show_cart_info(self, query):
+        """Показать информацию о корзине пользователя"""
+        user_id = str(query.from_user.id)
+        cart_items = await self.get_cart_data(user_id)
+        
+        if not cart_items:
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("✨ Открыть каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
+                [InlineKeyboardButton("🔄 Назад в меню", callback_data="main_menu")]
+            ])
+            
+            await query.edit_message_text(
+                "🛍 <b>Ваша корзина пуста</b>\n\n"
+                "💫 Добавьте товары из каталога, чтобы они появились здесь\n\n"
+                "<i>✨ Откройте каталог и выберите что-то прекрасное!</i>",
+                reply_markup=keyboard,
+                parse_mode='HTML'
+            )
+            return
+        
+        # Формируем сообщение с товарами из корзины
+        cart_text = "🛍 <b>Ваша корзина</b>\n\n"
+        total_amount = 0
+        
+        for item in cart_items:
+            product = item.get('product', {})
+            name = product.get('name', 'Товар')
+            price = product.get('price', 0)
+            quantity = item.get('quantity', 1)
+            size = item.get('size', 'не указан')
+            
+            item_total = price * quantity
+            total_amount += item_total
+            
+            cart_text += f"📦 <b>{name}</b>\n"
+            cart_text += f"   Размер: {size}\n"
+            cart_text += f"   Количество: {quantity} шт.\n"
+            cart_text += f"   Цена: {price:,}₽ × {quantity} = {item_total:,}₽\n\n"
+        
+        cart_text += f"💰 <b>Итого: {total_amount:,}₽</b>\n\n"
+        cart_text += "<i>💫 Корзина синхронизируется между ботом и веб-каталогом</i>"
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🛍 Открыть корзину", web_app=WebAppInfo(url=f"{WEBAPP_URL}#cart"))],
+            [InlineKeyboardButton("✨ Каталог", web_app=WebAppInfo(url=WEBAPP_URL)),
+             InlineKeyboardButton("🔄 Обновить", callback_data="show_cart")],
+            [InlineKeyboardButton("🔄 Назад в меню", callback_data="main_menu")]
+        ])
+        
+        await query.edit_message_text(
+            cart_text,
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
+
     async def button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обработчик нажатий на кнопки"""
         query = update.callback_query
         await query.answer()
         
-        if query.data == "show_cart":
-            keyboard = [[InlineKeyboardButton("🛒 Открыть корзину", web_app=WebAppInfo(url=f"{WEBAPP_URL}#cart"))]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
+        if query.data == "main_menu":
+            welcome_text = f"""
+✨ <b>Добро пожаловать в мир BY KARY</b> ✨
+
+<i>Здесь каждое изделие создано с любовью
+"к себе нужно нежно" — наше кредо</i>
+
+🛍 <b>Выберите действие:</b>
+            """
             await query.edit_message_text(
-                "Откройте корзину для просмотра добавленных товаров:",
-                reply_markup=reply_markup
+                welcome_text,
+                reply_markup=self.get_main_menu_keyboard(),
+                parse_mode='HTML'
             )
             
+        elif query.data == "show_cart":
+            await self.show_cart_info(query)
+            
         elif query.data == "ai_help":
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 Назад в меню", callback_data="main_menu")]
+            ])
             await query.edit_message_text(
-                "💬 <b>AI-ассистент готов помочь!</b>\n\n"
-                "Задайте любой вопрос о товарах, размерах, доставке или бренде By Kary.\n\n"
-                "<i>Просто напишите ваш вопрос в чат...</i>",
+                "💬 <b>Персональный стилист BY KARY</b> ✨\n\n"
+                "Привет! Я помогу тебе с выбором:\n"
+                "• Подберу размер\n"
+                "• Расскажу о тканях и уходе\n"
+                "• Посоветую образы\n"
+                "• Отвечу на любые вопросы\n\n"
+                "<i>Просто напиши мне что хочешь узнать 💕</i>",
+                reply_markup=keyboard,
                 parse_mode='HTML'
             )
             
         elif query.data == "my_orders":
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 Назад в меню", callback_data="main_menu")]
+            ])
             await query.edit_message_text(
-                "📦 <b>Ваши заказы</b>\n\n"
-                "Это демо-версия магазина. Все заказы носят демонстрационный характер.\n\n"
-                "Для реальных покупок посетите bykary.ru",
+                "📦 <b>История заказов</b>\n\n"
+                "💎 Это демо-версия магазина\n"
+                "Все заказы носят демонстрационный характер\n\n"
+                "🌸 Для реальных покупок:\n"
+                "• Посетите bykary.ru\n"
+                "• Или свяжитесь с нами напрямую\n\n"
+                "<i>Спасибо за интерес к бренду BY KARY! 💕</i>",
+                reply_markup=keyboard,
                 parse_mode='HTML'
             )
     
@@ -208,29 +381,37 @@ class ByKaryBot:
             
             # Добавляем кнопки для быстрых действий
             keyboard = [
-                [InlineKeyboardButton("🛒 Каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
-                [InlineKeyboardButton("🔗 Сайт bykary.ru", url="https://bykary.ru")]
+                [InlineKeyboardButton("✨ Каталог", web_app=WebAppInfo(url=WEBAPP_URL)),
+                 InlineKeyboardButton("🛍 Корзина", callback_data="show_cart")],
+                [InlineKeyboardButton("🔄 Меню", callback_data="main_menu"),
+                 InlineKeyboardButton("🌸 Сайт", url="https://bykary.ru")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             await update.message.reply_text(
-                f"💬 [{current_provider}] {ai_response}",
-                reply_markup=reply_markup
+                f"💬 <b>Стилист BY KARY:</b>\n\n{ai_response}\n\n<i>Еще вопросы? Пишите! 💕</i>",
+                reply_markup=reply_markup,
+                parse_mode='HTML'
             )
             
         except Exception as e:
             logger.error(f"Error in AI assistant: {e}")
             
-            # При ошибке показываем сообщение об ошибке
+            # При ошибке показываем красивое сообщение
             keyboard = [
-                [InlineKeyboardButton("🛒 Каталог", web_app=WebAppInfo(url=WEBAPP_URL))],
-                [InlineKeyboardButton("🔗 Сайт bykary.ru", url="https://bykary.ru")]
+                [InlineKeyboardButton("✨ Каталог", web_app=WebAppInfo(url=WEBAPP_URL)),
+                 InlineKeyboardButton("🛍 Корзина", callback_data="show_cart")],
+                [InlineKeyboardButton("🔄 Меню", callback_data="main_menu"),
+                 InlineKeyboardButton("🌸 Сайт", url="https://bykary.ru")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             await update.message.reply_text(
-                f"⚠️ Ошибка AI-ассистента. Попробуйте позже или посетите наш сайт bykary.ru",
-                reply_markup=reply_markup
+                "💫 <b>Стилист временно недоступен</b>\n\n"
+                "Попробуйте чуть позже или посетите наш сайт bykary.ru\n\n"
+                "<i>Мы всегда рады помочь! 💕</i>",
+                reply_markup=reply_markup,
+                parse_mode='HTML'
             )
     
     async def web_app_data(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -264,6 +445,33 @@ class ByKaryBot:
         except Exception as e:
             logger.error(f"Error processing WebApp data: {e}")
     
+    async def setup_bot_menu(self):
+        """Настройка постоянного меню бота"""
+        try:
+            from telegram import BotCommand, MenuButtonWebApp
+            
+            # Устанавливаем список команд
+            commands = [
+                BotCommand("start", "🏠 Главное меню"),
+                BotCommand("catalog", "✨ Открыть каталог"),
+                BotCommand("cart", "🛍 Моя корзина"),  
+                BotCommand("help", "❓ Помощь")
+            ]
+            
+            await self.application.bot.set_my_commands(commands)
+            
+            # Устанавливаем кнопку меню как WebApp
+            menu_button = MenuButtonWebApp(
+                text="✨ КАТАЛОГ",
+                web_app=WebAppInfo(url=WEBAPP_URL)
+            )
+            await self.application.bot.set_chat_menu_button(menu_button=menu_button)
+            
+            logger.info("✅ Bot menu настроено успешно")
+            
+        except Exception as e:
+            logger.error(f"Ошибка настройки меню бота: {e}")
+    
     def run(self):
         """Запуск бота"""
         if not BOT_TOKEN or BOT_TOKEN == 'YOUR_BOT_TOKEN_HERE':
@@ -277,9 +485,16 @@ class ByKaryBot:
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
         self.application.add_handler(CommandHandler("catalog", self.catalog_command))
+        self.application.add_handler(CommandHandler("cart", self.cart_command))
         self.application.add_handler(CallbackQueryHandler(self.button_handler))
         self.application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, self.web_app_data))
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.ai_assistant))
+        
+        # Настраиваем меню при запуске
+        async def post_init(application):
+            await self.setup_bot_menu()
+        
+        self.application.post_init = post_init
         
         # Запускаем бота
         logger.info("Запуск бота...")

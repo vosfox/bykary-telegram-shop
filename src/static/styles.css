@@ -28,6 +28,37 @@ body {
     align-items: center;
     justify-content: space-between;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.close-btn:active {
+    transform: scale(0.95);
 }
 
 .logo {
@@ -143,6 +174,52 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* Image Gallery */
+.image-gallery {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.primary-image {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    flex: 1;
+}
+
+.image-thumbnails {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0,0,0,0.05);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.thumbnail {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.thumbnail:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.thumbnail.active {
+    opacity: 1;
+    border-color: #d4a5a5;
+    transform: scale(1.05);
 }
 
 .product-info {

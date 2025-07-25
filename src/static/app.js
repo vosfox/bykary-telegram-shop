@@ -2,6 +2,13 @@
 let tg = window.Telegram.WebApp;
 tg.expand();
 
+// Close WebApp function
+function closeWebApp() {
+    if (tg && tg.close) {
+        tg.close();
+    }
+}
+
 // Global state
 let products = [];
 let cart = [];
@@ -89,8 +96,7 @@ function renderProducts() {
     grid.innerHTML = filteredProducts.map(product => `
         <div class="product-card">
             <div class="product-image">
-                <img src="${product.image_url}" alt="${product.name}" 
-                     onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">
+                ${renderProductImages(product)}
             </div>
             <div class="product-info">
                 <div class="product-name">${product.name}</div>
@@ -367,6 +373,46 @@ function showError(message) {
     } else {
         alert('Ошибка: ' + message);
     }
+}
+
+function renderProductImages(product) {
+    const images = product.images || [product.image_url];
+    
+    if (images.length === 1) {
+        return `<img src="${images[0]}" alt="${product.name}" 
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">`;
+    }
+    
+    // Если изображений несколько, создаем галерею с превью
+    const primaryImage = images[0];
+    return `
+        <div class="image-gallery">
+            <img src="${primaryImage}" alt="${product.name}" class="primary-image" id="primary-${product.id}"
+                 onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">
+            ${images.length > 1 ? `
+                <div class="image-thumbnails">
+                    ${images.map((img, index) => `
+                        <img src="${img}" alt="${product.name} ${index + 1}" class="thumbnail ${index === 0 ? 'active' : ''}"
+                             onclick="switchImage(${product.id}, '${img}', this)"
+                             onerror="this.style.display='none';">
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function switchImage(productId, imageUrl, thumbnail) {
+    // Обновляем основное изображение
+    const primaryImage = document.getElementById(`primary-${productId}`);
+    if (primaryImage) {
+        primaryImage.src = imageUrl;
+    }
+    
+    // Обновляем активный thumbnail
+    const container = thumbnail.parentElement;
+    container.querySelectorAll('.thumbnail').forEach(thumb => thumb.classList.remove('active'));
+    thumbnail.classList.add('active');
 }
 
 function formatPrice(price) {
