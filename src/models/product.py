@@ -10,18 +10,9 @@ class Product(db.Model):
     category = db.Column(db.String(50))
     sizes = db.Column(db.String(100))  # JSON string: ["XS", "S", "M", "L"]
     
-    # Связь с изображениями
-    images = db.relationship('ProductImage', backref='product', lazy=True, cascade='all, delete-orphan')
-    
     def to_dict(self):
-        # Получаем все изображения товара
-        product_images = []
-        if self.images:
-            # Сортируем по order_index
-            sorted_images = sorted(self.images, key=lambda x: x.order_index or 0)
-            product_images = [img.image_url for img in sorted_images]
-        elif self.image_url:
-            product_images = [self.image_url]
+        # Простая версия - используем только основное изображение
+        product_images = [self.image_url] if self.image_url else ['/static/images/placeholder.svg']
         
         return {
             'id': self.id,
@@ -29,7 +20,7 @@ class Product(db.Model):
             'description': self.description,
             'price': self.price,
             'image_url': self.image_url,
-            'images': product_images,  # Массив всех изображений
+            'images': product_images,  # Массив изображений
             'category': self.category,
             'sizes': self.sizes.split(',') if self.sizes else []
         }
