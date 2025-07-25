@@ -370,9 +370,19 @@ class ByKaryBot:
         user_message = update.message.text
         user_name = update.effective_user.first_name
         
-        # Показываем, что бот печатает
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-            
+        # Показываем, что бот печатает (для DeepSeek нужно дольше)
+        async def keep_typing():
+            """Поддерживаем typing пока DeepSeek думает"""
+            while True:
+                try:
+                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+                    await asyncio.sleep(4)  # Каждые 4 секунды обновляем
+                except:
+                    break
+        
+        # Запускаем typing в фоне
+        typing_task = asyncio.create_task(keep_typing())
+        
         try:
             # Системный промпт для AI-ассистента
             system_prompt = f"""
@@ -439,6 +449,9 @@ class ByKaryBot:
             
             ai_response = response.choices[0].message.content.strip()
             
+            # Останавливаем typing анимацию
+            typing_task.cancel()
+            
             # Добавляем кнопки для быстрых действий
             keyboard = [
                 [InlineKeyboardButton("✨ Каталог", web_app=WebAppInfo(url=WEBAPP_URL)),
@@ -456,6 +469,9 @@ class ByKaryBot:
             
         except Exception as e:
             logger.error(f"Error in AI assistant: {e}")
+            
+            # Останавливаем typing при ошибке
+            typing_task.cancel()
             
             # При ошибке показываем красивое сообщение
             keyboard = [
