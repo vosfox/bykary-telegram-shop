@@ -370,18 +370,14 @@ class ByKaryBot:
         user_message = update.message.text
         user_name = update.effective_user.first_name
         
-        # Показываем, что бот печатает (для DeepSeek нужно дольше)
-        async def keep_typing():
-            """Поддерживаем typing пока DeepSeek думает"""
-            while True:
-                try:
-                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-                    await asyncio.sleep(4)  # Каждые 4 секунды обновляем
-                except:
-                    break
+        # Сразу отправляем сообщение "думаю..." 
+        thinking_message = await update.message.reply_text(
+            "🤔 <i>Думаю над ответом...</i>",
+            parse_mode='HTML'
+        )
         
-        # Запускаем typing в фоне
-        typing_task = asyncio.create_task(keep_typing())
+        # И показываем typing сверху
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         
         try:
             # Системный промпт для AI-ассистента
@@ -449,9 +445,6 @@ class ByKaryBot:
             
             ai_response = response.choices[0].message.content.strip()
             
-            # Останавливаем typing анимацию
-            typing_task.cancel()
-            
             # Добавляем кнопки для быстрых действий
             keyboard = [
                 [InlineKeyboardButton("✨ Каталог", web_app=WebAppInfo(url=WEBAPP_URL)),
@@ -461,7 +454,8 @@ class ByKaryBot:
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            await update.message.reply_text(
+            # Заменяем сообщение "думаю..." на реальный ответ
+            await thinking_message.edit_text(
                 f"💬 <b>Стилист BY KARY:</b>\n\n{ai_response}\n\n<i>Еще вопросы? Пишите! 💕</i>",
                 reply_markup=reply_markup,
                 parse_mode='HTML'
@@ -469,9 +463,6 @@ class ByKaryBot:
             
         except Exception as e:
             logger.error(f"Error in AI assistant: {e}")
-            
-            # Останавливаем typing при ошибке
-            typing_task.cancel()
             
             # При ошибке показываем красивое сообщение
             keyboard = [
@@ -482,7 +473,8 @@ class ByKaryBot:
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            await update.message.reply_text(
+            # Заменяем сообщение "думаю..." на ошибку
+            await thinking_message.edit_text(
                 "💫 <b>Стилист временно недоступен</b>\n\n"
                 "Попробуйте чуть позже или посетите наш сайт bykary.ru\n\n"
                 "<i>Мы всегда рады помочь! 💕</i>",
