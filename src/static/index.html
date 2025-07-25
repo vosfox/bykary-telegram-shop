@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>By Kary - Демо магазин</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 30 Q50 10 80 30 Q50 50 20 30" stroke="white" stroke-width="3" fill="none"/>
+                    <text x="50" y="70" text-anchor="middle" fill="white" font-size="12" font-family="serif">by KARY</text>
+                </svg>
+            </div>
+            <h1>Демо магазин</h1>
+            <div class="cart-icon" onclick="showCart()">
+                <span class="cart-count" id="cartCount">0</span>
+                🛍️
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navigation">
+            <button class="nav-btn active" onclick="showCategory('all')">Все</button>
+            <button class="nav-btn" onclick="showCategory('Новинки')">Новинки</button>
+            <button class="nav-btn" onclick="showCategory('Платья')">Платья</button>
+            <button class="nav-btn" onclick="showCategory('Юбки')">Юбки</button>
+            <button class="nav-btn" onclick="showCategory('Костюмы')">Костюмы</button>
+            <button class="nav-btn" onclick="showCategory('Аксессуары')">Аксессуары</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Products Grid -->
+            <div id="productsGrid" class="products-grid">
+                <!-- Products will be loaded here -->
+            </div>
+
+            <!-- Cart View -->
+            <div id="cartView" class="cart-view hidden">
+                <h2>Корзина</h2>
+                <div id="cartItems" class="cart-items">
+                    <!-- Cart items will be loaded here -->
+                </div>
+                <div class="cart-total">
+                    <div class="total-amount">
+                        Итого: <span id="totalAmount">0</span> ₽
+                    </div>
+                    <button class="checkout-btn" onclick="showCheckout()">Оформить заказ</button>
+                </div>
+            </div>
+
+            <!-- Checkout Form -->
+            <div id="checkoutForm" class="checkout-form hidden">
+                <h2>Оформление заказа</h2>
+                <form id="orderForm">
+                    <div class="form-group">
+                        <label for="customerName">Имя</label>
+                        <input type="text" id="customerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerPhone">Телефон</label>
+                        <input type="tel" id="customerPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerCity">Город</label>
+                        <input type="text" id="customerCity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerComment">Комментарий</label>
+                        <textarea id="customerComment" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Подтвердить заказ</button>
+                </form>
+            </div>
+        </main>
+
+        <!-- Loading -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
