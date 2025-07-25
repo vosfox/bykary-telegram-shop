@@ -269,19 +269,15 @@ function processPayment() {
         return;
     }
     
-    const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    // Показываем сообщение об оплате в боте
+    showNotification('💳 Для оплаты вернитесь в бот Telegram! Там нажмите "Корзина" → "Оплатить заказ"');
     
-    // Отправляем данные о заказе в бот
-    if (tg.sendData) {
-        tg.sendData(JSON.stringify({
-            type: 'payment_request',
-            total_amount: total,
-            cart_items: cart.length,
-            user_id: userId
-        }));
+    // Можно также закрыть WebApp
+    if (tg.close) {
+        setTimeout(() => {
+            tg.close();
+        }, 3000); // Закрываем через 3 секунды
     }
-    
-    showNotification(`Сумма к оплате: ${formatPrice(total)}₽. Переходим к оплате...`);
 }
 
 async function handleOrderSubmit(event) {
