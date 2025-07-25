@@ -72,8 +72,8 @@ def download_product_images():
     images_dir = os.path.join("src", "static", "images")
     os.makedirs(images_dir, exist_ok=True)
     
-    print("🔄 Начинаем скачивание изображений товаров BY KARY...")
-    print(f"📁 Папка назначения: {os.path.abspath(images_dir)}")
+    print("Начинаем скачивание изображений товаров BY KARY...")
+    print(f"Папка назначения: {os.path.abspath(images_dir)}")
     print("=" * 60)
     
     success_count = 0
@@ -83,8 +83,8 @@ def download_product_images():
         product_name = product_data['name']
         images = product_data['images']
         
-        print(f"\n📦 ТОВАР {product_id}: {product_name}")
-        print(f"   🖼️  Изображений: {len(images)}")
+        print(f"\nТОВАР {product_id}: {product_name}")
+        print(f"   Изображений: {len(images)}")
         
         for index, image_url in enumerate(images, 1):
             try:
@@ -92,7 +92,7 @@ def download_product_images():
                 filename = f"product_{product_id}_{index}.webp"
                 local_path = os.path.join(images_dir, filename)
                 
-                print(f"   ⬇️  Скачиваем изображение {index}...")
+                print(f"   Скачиваем изображение {index}...")
                 
                 # Добавляем заголовки для обхода блокировок
                 headers = {
@@ -114,24 +114,23 @@ def download_product_images():
                     f.write(response.content)
                 
                 file_size = len(response.content)
-                print(f"      ✅ Сохранено: {filename} ({file_size:,} байт)")
+                print(f"      Сохранено: {filename} ({file_size:,} байт)")
                 success_count += 1
                 
             except Exception as e:
-                print(f"      ❌ Ошибка: {str(e)}")
+                print(f"      Ошибка: {str(e)}")
                 error_count += 1
     
     print("\n" + "=" * 60)
-    print(f"📊 РЕЗУЛЬТАТ:")
-    print(f"   ✅ Успешно скачано: {success_count} изображений")
-    print(f"   ❌ Ошибок: {error_count}")
+    print(f"РЕЗУЛЬТАТ:")
+    print(f"   Успешно скачано: {success_count} изображений")
+    print(f"   Ошибок: {error_count}")
     
     if success_count > 0:
-        print(f"\n🎉 СЛЕДУЮЩИЙ ШАГ:")
-        print(f"   1. Запустите сервер: python src/main.py") 
-        print(f"   2. Откройте в браузере: http://localhost:5000/update-images")
-        print(f"   3. Или запустите: python src/update_product_images.py")
-        print(f"\n💫 После этого в каталоге появятся красивые галереи изображений!")
+        print(f"\nСЛЕДУЮЩИЙ ШАГ:")
+        print(f"   1. git add . && git commit -m 'Add images' && git push") 
+        print(f"   2. Откройте: https://web-production-10fa.up.railway.app/")
+        print(f"\nПосле этого в каталоге появятся красивые галереи изображений!")
 
 if __name__ == '__main__':
     download_product_images()
