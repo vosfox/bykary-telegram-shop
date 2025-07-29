@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, LabeledPrice
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, PreCheckoutQueryHandler
-from openai import OpenAI
+from ai_provider_manager import ai_manager
 
 # Настройка логирования
 logging.basicConfig(
@@ -28,36 +28,10 @@ BOT_TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
 WEBAPP_URL = os.getenv('WEBAPP_URL', 'https://your-app-url.com')
 PAYMENT_PROVIDER_TOKEN = os.getenv('PAYMENT_PROVIDER_TOKEN', 'YOUR_PAYMENT_TOKEN_HERE')
 
-# AI Provider Configuration
-OPENPROXY_API_KEY = os.getenv('OPENPROXY_API_KEY')
-OPENPROXY_MODEL = os.getenv('OPENPROXY_MODEL', 'gpt-3.5-turbo')
-OPENPROXY_BASE_URL = os.getenv('OPENPROXY_BASE_URL', 'https://api.openproxy.com/v1')
-
-OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
-OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'openai/gpt-3.5-turbo')
-OPENROUTER_BASE_URL = os.getenv('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1')
-
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-
-# Определяем активный провайдер (логика переключения через комментирование)
-ai_client = None
-current_provider = None
-
-if OPENPROXY_API_KEY:
-    ai_client = OpenAI(api_key=OPENPROXY_API_KEY, base_url=OPENPROXY_BASE_URL)
-    current_provider = "OpenProxy"
-elif OPENROUTER_API_KEY:
-    ai_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url=OPENROUTER_BASE_URL)
-    current_provider = "OpenRouter"
-elif OPENAI_API_KEY:
-    ai_client = OpenAI(api_key=OPENAI_API_KEY)
-    current_provider = "OpenAI"
-else:
-    # Если все закомментированы, выходим с ошибкой
-    logger.error("❌ Ни один AI провайдер не настроен! Раскомментируйте провайдера в .env файле")
-    sys.exit(1)
-
-logger.info(f"✅ AI Provider: {current_provider}")
+# AI Manager уже инициализирован в ai_provider_manager
+logger.info(f"✅ AI Provider: {ai_manager.get_current_provider()}")
+if ai_manager.is_fallback_enabled():
+    logger.info("✅ Fallback система активна")
 
 class ByKaryBot:
     def __init__(self):
@@ -425,16 +399,8 @@ class ByKaryBot:
 Отвечай по-русски, кокетливо, но профессионально. Закрывай продажи мягко!
             """
             
-            # Определяем модель в зависимости от провайдера
-            model = "gpt-3.5-turbo"
-            if current_provider == "OpenRouter":
-                model = OPENROUTER_MODEL  # Используем модель из .env
-            elif current_provider == "OpenProxy":
-                model = OPENPROXY_MODEL  # Используем модель из .env
-            
-            # Запрос к AI провайдеру
-            response = ai_client.chat.completions.create(
-                model=model,
+            # Используем AI Manager для запроса
+            ai_response = ai_manager.chat_completion(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
@@ -442,8 +408,6 @@ class ByKaryBot:
                 max_tokens=500,
                 temperature=0.7
             )
-            
-            ai_response = response.choices[0].message.content.strip()
             
             # Добавляем кнопки для быстрых действий
             keyboard = [
@@ -455,8 +419,9 @@ class ByKaryBot:
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             # Заменяем сообщение "думаю..." на реальный ответ
+            stylist_name = ai_manager.get_stylists_name()
             await thinking_message.edit_text(
-                f"💬 <b>Стилист BY KARY:</b>\n\n{ai_response}\n\n<i>Еще вопросы? Пишите! 💕</i>",
+                f"💬 <b>Стилист {stylist_name} BY KARY:</b>\n\n{ai_response}\n\n<i>Еще вопросы? Пишите! 💕</i>",
                 reply_markup=reply_markup,
                 parse_mode='HTML'
             )

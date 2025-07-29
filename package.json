@@ -1,0 +1,16 @@
+{
+  "name": "bykary-telegram-shop",
+  "version": "1.0.0",
+  "description": "ByKary Telegram Shop with Puter.js AI integration",
+  "main": "src/puter_client.js",
+  "scripts": {
+    "install-deps": "npm install node-fetch",
+    "test-puter": "node src/puter_client.js '{\"messages\":[{\"role\":\"user\",\"content\":\"test\"}]}'"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
