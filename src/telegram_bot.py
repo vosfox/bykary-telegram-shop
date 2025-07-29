@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, LabeledPrice
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, PreCheckoutQueryHandler
-from src.ai_provider_manager import ai_manager
+from openai import OpenAI
 
 # Настройка логирования
 logging.basicConfig(
@@ -28,10 +28,17 @@ BOT_TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
 WEBAPP_URL = os.getenv('WEBAPP_URL', 'https://your-app-url.com')
 PAYMENT_PROVIDER_TOKEN = os.getenv('PAYMENT_PROVIDER_TOKEN', 'YOUR_PAYMENT_TOKEN_HERE')
 
-# AI Manager уже инициализирован в ai_provider_manager
-logger.info(f"✅ AI Provider: {ai_manager.get_current_provider()}")
-if ai_manager.is_fallback_enabled():
-    logger.info("✅ Fallback система активна")
+# AI Provider Configuration (БЫСТРЫЙ ОТКАТ К СТАРОМУ КОДУ)
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+USE_PUTER = os.getenv('USE_PUTER', 'false').lower() == 'true'
+
+if OPENAI_API_KEY:
+    ai_client = OpenAI(api_key=OPENAI_API_KEY)
+    current_provider = "Ксения" if not USE_PUTER else "Аня"
+    logger.info(f"✅ AI Provider: {current_provider}")
+else:
+    logger.error("❌ OPENAI_API_KEY не настроен!")
+    sys.exit(1)
 
 class ByKaryBot:
     def __init__(self):
@@ -399,8 +406,9 @@ class ByKaryBot:
 Отвечай по-русски, кокетливо, но профессионально. Закрывай продажи мягко!
             """
             
-            # Используем AI Manager для запроса
-            ai_response = ai_manager.chat_completion(
+            # Простой вызов OpenAI (быстрый откат)
+            response = ai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
@@ -408,6 +416,8 @@ class ByKaryBot:
                 max_tokens=500,
                 temperature=0.7
             )
+            
+            ai_response = response.choices[0].message.content.strip()
             
             # Добавляем кнопки для быстрых действий
             keyboard = [
@@ -419,9 +429,8 @@ class ByKaryBot:
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             # Заменяем сообщение "думаю..." на реальный ответ
-            stylist_name = ai_manager.get_stylists_name()
             await thinking_message.edit_text(
-                f"💬 <b>Стилист {stylist_name} BY KARY:</b>\n\n{ai_response}\n\n<i>Еще вопросы? Пишите! 💕</i>",
+                f"💬 <b>Стилист {current_provider} BY KARY:</b>\n\n{ai_response}\n\n<i>Еще вопросы? Пишите! 💕</i>",
                 reply_markup=reply_markup,
                 parse_mode='HTML'
             )
