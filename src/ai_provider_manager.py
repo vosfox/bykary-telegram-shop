@@ -53,16 +53,11 @@ class AIProviderManager:
             key=lambda x: x[1].get('priority', 999)
         )
         
-        logger.info(f"🔍 Доступные провайдеры: {[name for name, _ in sorted_providers]}")
-        
         for provider_name, config in sorted_providers:
-            logger.info(f"🔄 Пытаюсь инициализировать: {provider_name}")
             if self._try_init_provider(provider_name):
                 break
         
         if not self.current_provider:
-            logger.error("❌ Ни один AI провайдер не доступен!")
-            logger.error(f"Проверьте переменные: USE_PUTER={os.getenv('USE_PUTER')}, OPENAI_API_KEY={'SET' if os.getenv('OPENAI_API_KEY') else 'NOT SET'}")
             raise Exception("Ни один AI провайдер не доступен!")
     
     def _try_init_provider(self, provider_name: str) -> bool:

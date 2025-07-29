@@ -54,7 +54,7 @@
                     </div>
                     <div class="cart-buttons">
                         <button class="checkout-btn" onclick="showCheckout()">Оформить заказ</button>
-                        <button class="pay-btn" onclick="processPayment()">💳 Оплата в боте ТГ</button>
+                        <button class="pay-btn" onclick="processPayment()">💳 Оплатить</button>
                     </div>
                 </div>
             </div>
@@ -87,19 +87,6 @@
         <!-- Loading -->
         <div id="loading" class="loading">
             <div class="spinner"></div>
-        </div>
-
-        <!-- Image Modal -->
-        <div id="imageModal" class="image-modal hidden" onclick="closeImageModal()">
-            <div class="modal-content" onclick="event.stopPropagation()">
-                <span class="modal-close" onclick="closeImageModal()">&times;</span>
-                <img id="modalImage" src="" alt="">
-                <div class="modal-navigation">
-                    <button class="modal-nav-btn" onclick="previousImage()">&larr;</button>
-                    <div class="modal-thumbnails" id="modalThumbnails"></div>
-                    <button class="modal-nav-btn" onclick="nextImage()">&rarr;</button>
-                </div>
-            </div>
         </div>
     </div>
 

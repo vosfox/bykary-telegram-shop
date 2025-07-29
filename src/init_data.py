@@ -13,7 +13,7 @@ def init_products():
             'name': 'Футболка с монограммой черная',
             'description': 'Стильная футболка с монограммой ByKary',
             'price': 5900.0,
-            'image_url': '/static/images/product_1_1.webp',
+            'image_url': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
             'category': 'Топы/Футболки',
             'sizes': 'XS,S,M,L'
         },
@@ -21,7 +21,7 @@ def init_products():
             'name': 'Футболка с монограммой белая',
             'description': 'Элегантная белая футболка с монограммой',
             'price': 5900.0,
-            'image_url': '/static/images/product_2_1.webp',
+            'image_url': '/static/images/placeholder.svg',
             'category': 'Топы/Футболки',
             'sizes': 'XS,S,M,L'
         },
@@ -29,7 +29,7 @@ def init_products():
             'name': 'Костюм-полоска Аладдин rosy',
             'description': 'Нежный костюм в полоску розового цвета',
             'price': 15900.0,
-            'image_url': '/static/images/product_3_1.webp',
+            'image_url': '/static/images/placeholder.svg',
             'category': 'Костюмы',
             'sizes': 'XS,S,M,L'
         },
@@ -37,7 +37,7 @@ def init_products():
             'name': 'Костюм-полоска Аладдин blue',
             'description': 'Стильный костюм в полоску голубого цвета',
             'price': 15900.0,
-            'image_url': '/static/images/product_4_1.webp',
+            'image_url': '/static/images/placeholder.svg',
             'category': 'Костюмы',
             'sizes': 'XS,S,M,L'
         },
@@ -45,7 +45,7 @@ def init_products():
             'name': 'Футболка-платье Mama needs champagne розовая',
             'description': 'Удобное платье-футболка с принтом',
             'price': 6900.0,
-            'image_url': '/static/images/product_5_1.webp',
+            'image_url': '/static/images/placeholder.svg',
             'category': 'Платья',
             'sizes': 'XS,S,M,L'
         },
@@ -53,7 +53,7 @@ def init_products():
             'name': 'Футболка-платье Mama needs champagne бежевая',
             'description': 'Стильное платье-футболка бежевого цвета',
             'price': 6900.0,
-            'image_url': '/static/images/product_6_1.webp',
+            'image_url': '/static/images/placeholder.svg',
             'category': 'Платья',
             'sizes': 'XS,S,M,L'
         },
@@ -61,7 +61,7 @@ def init_products():
             'name': 'Футболка-поло в полоску',
             'description': 'Классическая поло в полоску',
             'price': 6900.0,
-            'image_url': '/static/images/product_7_1.webp',
+            'image_url': '/static/images/placeholder.svg',
             'category': 'Топы/Футболки',
             'sizes': 'XS,S,M,L'
         },
@@ -69,7 +69,7 @@ def init_products():
             'name': 'Джинсовая куртка-косуха молочная',
             'description': 'Стильная джинсовая куртка молочного цвета',
             'price': 12900.0,
-            'image_url': '/static/images/product_8_1.webp',
+            'image_url': '/static/images/placeholder.svg',
             'category': 'Верхняя одежда',
             'sizes': 'XS,S,M,L'
         }

@@ -269,15 +269,19 @@ function processPayment() {
         return;
     }
     
-    // Показываем сообщение об оплате в боте
-    showNotification('💳 Для оплаты вернитесь в бот Telegram! Там нажмите "Корзина" → "Оплатить заказ"');
+    const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
     
-    // Можно также закрыть WebApp
-    if (tg.close) {
-        setTimeout(() => {
-            tg.close();
-        }, 3000); // Закрываем через 3 секунды
+    // Отправляем данные о заказе в бот
+    if (tg.sendData) {
+        tg.sendData(JSON.stringify({
+            type: 'payment_request',
+            total_amount: total,
+            cart_items: cart.length,
+            user_id: userId
+        }));
     }
+    
+    showNotification(`Сумма к оплате: ${formatPrice(total)}₽. Переходим к оплате...`);
 }
 
 async function handleOrderSubmit(event) {
@@ -393,45 +397,28 @@ function showError(message) {
 }
 
 function renderProductImages(product) {
-    // Получаем изображения из product.images или используем основное изображение
-    let images = [];
-    if (product.images && Array.isArray(product.images)) {
-        images = product.images;
-    } else if (product.image_url) {
-        images = [product.image_url];
-    } else {
-        images = ['/static/images/placeholder.svg'];
-    }
-    
-    // Сохраняем изображения в глобальном объекте для каждого товара
-    window.productImages = window.productImages || {};
-    window.productImages[product.id] = images;
-    
-    const primaryImage = images[0];
+    const images = product.images || [product.image_url];
     
     if (images.length === 1) {
-        // Одно изображение - простая картинка с модалкой
-        return `<img src="${primaryImage}" alt="${product.name}" 
-                     onclick="openImageModal('${primaryImage}', '${product.name}', ${product.id})"
-                     style="cursor: pointer; width: 100%; height: 100%; object-fit: cover;"
-                     onerror="this.src='/static/images/placeholder.svg';">`;
+        return `<img src="${images[0]}" alt="${product.name}" 
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">`;
     }
     
-    // Несколько изображений - галерея с превью
+    // Если изображений несколько, создаем галерею с превью
+    const primaryImage = images[0];
     return `
         <div class="image-gallery">
             <img src="${primaryImage}" alt="${product.name}" class="primary-image" id="primary-${product.id}"
-                 onclick="openImageModal('${primaryImage}', '${product.name}', ${product.id})"
-                 style="cursor: pointer;"
-                 onerror="this.src='/static/images/placeholder.svg';">
-            <div class="image-thumbnails">
-                ${images.map((img, index) => `
-                    <img src="${img}" alt="${product.name} ${index + 1}" 
-                         class="thumbnail ${index === 0 ? 'active' : ''}"
-                         onclick="switchImage(${product.id}, '${img}', this)"
-                         onerror="this.style.display='none';">
-                `).join('')}
-            </div>
+                 onerror="this.style.display='none'; this.parentElement.innerHTML='Фото товара';">
+            ${images.length > 1 ? `
+                <div class="image-thumbnails">
+                    ${images.map((img, index) => `
+                        <img src="${img}" alt="${product.name} ${index + 1}" class="thumbnail ${index === 0 ? 'active' : ''}"
+                             onclick="switchImage(${product.id}, '${img}', this)"
+                             onerror="this.style.display='none';">
+                    `).join('')}
+                </div>
+            ` : ''}
         </div>
     `;
 }
@@ -452,99 +439,6 @@ function switchImage(productId, imageUrl, thumbnail) {
 function formatPrice(price) {
     return new Intl.NumberFormat('ru-RU').format(price);
 }
-
-// Image Modal Functions
-let currentModalImages = [];
-let currentModalIndex = 0;
-
-function openImageModal(imageUrl, productName, productId) {
-    try {
-        // Получаем изображения для этого товара
-        currentModalImages = window.productImages[productId] || [imageUrl];
-        currentModalIndex = currentModalImages.indexOf(imageUrl);
-        if (currentModalIndex === -1) currentModalIndex = 0;
-        
-        const modal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const modalThumbnails = document.getElementById('modalThumbnails');
-        
-        modalImage.src = currentModalImages[currentModalIndex];
-        modalImage.alt = productName;
-        
-        // Создаем миниатюры только если изображений больше одного
-        if (currentModalImages.length > 1) {
-            modalThumbnails.innerHTML = currentModalImages.map((img, index) => `
-                <img src="${img}" alt="${productName} ${index + 1}" 
-                     class="modal-thumb ${index === currentModalIndex ? 'active' : ''}"
-                     onclick="selectModalImage(${index})">
-            `).join('');
-        } else {
-            modalThumbnails.innerHTML = '';
-        }
-        
-        modal.classList.remove('hidden');
-        updateModalNavigation();
-        
-    } catch (e) {
-        console.error('Error opening modal:', e);
-    }
-}
-
-function closeImageModal() {
-    const modal = document.getElementById('imageModal');
-    modal.classList.add('hidden');
-}
-
-function selectModalImage(index) {
-    currentModalIndex = index;
-    const modalImage = document.getElementById('modalImage');
-    modalImage.src = currentModalImages[index];
-    
-    // Обновляем активную миниатюру
-    document.querySelectorAll('.modal-thumb').forEach((thumb, i) => {
-        thumb.classList.toggle('active', i === index);
-    });
-    
-    updateModalNavigation();
-}
-
-function previousImage() {
-    // Бесконечная прокрутка - если на первом фото, переходим к последнему
-    if (currentModalIndex > 0) {
-        selectModalImage(currentModalIndex - 1);
-    } else {
-        selectModalImage(currentModalImages.length - 1);
-    }
-}
-
-function nextImage() {
-    // Бесконечная прокрутка - если на последнем фото, переходим к первому
-    if (currentModalIndex < currentModalImages.length - 1) {
-        selectModalImage(currentModalIndex + 1);
-    } else {
-        selectModalImage(0);
-    }
-}
-
-function updateModalNavigation() {
-    const prevBtn = document.querySelector('.modal-nav-btn:first-child');
-    const nextBtn = document.querySelector('.modal-nav-btn:last-child');
-    
-    // При бесконечной прокрутке кнопки всегда активны (если больше 1 изображения)
-    if (prevBtn) prevBtn.disabled = currentModalImages.length <= 1;
-    if (nextBtn) nextBtn.disabled = currentModalImages.length <= 1;
-}
-
-// Закрытие модального окна по Escape
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeImageModal();
-    } else if (e.key === 'ArrowLeft') {
-        previousImage();
-    } else if (e.key === 'ArrowRight') {
-        nextImage();
-    }
-});
 
 // Telegram WebApp event handlers
 tg.onEvent('mainButtonClicked', function() {

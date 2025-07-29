@@ -68,13 +68,3 @@ def update_cart_item(item_id):
     db.session.commit()
     return jsonify({'success': True})
 
-@cart_bp.route('/cart/<user_id>/clear', methods=['DELETE'])
-@cross_origin()
-def clear_cart(user_id):
-    """Очистить корзину пользователя"""
-    cart_items = CartItem.query.filter_by(user_id=user_id).all()
-    for item in cart_items:
-        db.session.delete(item)
-    db.session.commit()
-    return jsonify({'success': True, 'cleared_items': len(cart_items)})
-
